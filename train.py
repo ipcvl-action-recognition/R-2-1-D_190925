@@ -15,12 +15,12 @@ from torch.optim.lr_scheduler import StepLR
 from time import sleep
 import os
 from torchsummary import summary
-
-from networks import R2Plus1D_model
+import R2Plus1D_model
 if __name__ == "__main__":
     # folder_path = './single_data/Video'
     # readfile = './single_data/list'
     # framefile = './single_data/label_Result'
+
 
     folder_path = './Test_data/Video'
     readfile = './Test_data/list'

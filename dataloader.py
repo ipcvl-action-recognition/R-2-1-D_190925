@@ -327,8 +327,3 @@ class Le2i_VideoDataset:
 
         # print(label_person_box[0])
         return label_list, label_person_box
-
-if __name__=="__main__":
-    folder_path = "D:/DATASET/AIHub"
-    readfile = "D:/DATASET/208번_주취행동_xml"
-    AIHub_Dataset(folder_path=folder_path, readfile=readfile, is_train=True)

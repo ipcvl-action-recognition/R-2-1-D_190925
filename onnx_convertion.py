@@ -4,9 +4,10 @@ import numpy as np
 from network import C3DNet
 import cv2
 from torch import nn
-from networks import R2Plus1D_model
+import R2Plus1D_model
 torch.backends.cudnn.benchmark = True
 '''
+
 frames = []
 cap = cv2.VideoCapture('./Test_data/Video/Train/Coffee_room_01 (02).mp4')
 retaining =True
