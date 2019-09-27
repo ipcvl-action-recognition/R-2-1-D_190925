@@ -6,7 +6,8 @@ import os
 from torch.utils.data import DataLoader
 from ImageArg import ImageArg
 import time
-
+import utils
+from Setting import TrainSetting
 class UCF101_Dataset:
     def __init__(self, folder_path, readfile, is_train=True):
         self.folder_path = folder_path
@@ -114,28 +115,29 @@ class UCF101_Dataset:
         else:
             return [''.join(label_list)]
 
-
 class Le2i_VideoDataset:
-    def __init__(self, folder_path, readfile, framefile, clip_len, crop_size_width, crop_size_height, is_train):
-        self.folder_path = folder_path
-        folder_list = os.listdir(folder_path)
+    def __init__(self, TrainSetting, resolution, is_train):
+        self.resolution = resolution
+        self.folder_path = TrainSetting.folder_path
+        folder_list = os.listdir(TrainSetting.folder_path)
         self.folder_list = folder_list
 
         data_list = []
-        file_list = open(readfile, 'r')
+        file_list = open(TrainSetting.readfile, 'r')
         for line in file_list:
-            line = line.strip() # line = #Coffee_room_01 (02).mp4
-            data_list.append(folder_path + "/" + line)
+            line = line.strip()
+            data_list.append(TrainSetting.folder_path + "/" + line)
 
-        self.framefile_path = framefile # framefile = ./Test_data/label_Result2/Train
-        frame_folder_list = os.listdir(framefile)
+        self.framefile_path = TrainSetting.framefile # framefile = ./Test_data/label_Result2/Train
+        frame_folder_list = os.listdir(TrainSetting.framefile)
         self.frame_label_list = frame_folder_list # frame_folder_list = ['Coffee_room_01 (02).txt']
         self.video_list = data_list # data_list = ['./Test_data/Video2/Train/Coffee_room_01 (02).mp4']
-        self.clip_len = clip_len
-        self.crop_size_width = crop_size_width
-        self.crop_size_height = crop_size_height
-        self.resize_width = 320
-        self.resize_height = 240
+        self.clip_len = TrainSetting.clip_len
+        self.crop_size = TrainSetting.crop_size
+        self.crop_size_width = TrainSetting.crop_size
+        self.crop_size_height = TrainSetting.crop_size
+        self.resize_width = 640
+        self.resize_height = 360
         self.data_length = len(self.video_list)
         self.imgArg = ImageArg()
         self.allImage_buffer_list = []
@@ -145,22 +147,17 @@ class Le2i_VideoDataset:
         return len(self.video_list)
 
     def __getitem__(self, idx):
-        #print("self.video_list[idx] = ", self.video_list[idx])
         if (self.is_train==True):
-            label_list, label_person_box = self.label_extraction(self.frame_label_list[idx])
-            buffer, label_list, label_person_box, frame_width, frame_height = self.loadvideo(self.video_list[idx], label_list, label_person_box)  # # c, l, h, w
-            buffer, label_list, label_person_box = self.crop(buffer, self.clip_len, label_list, label_person_box, frame_width, frame_height)
+            label_list, person_label_box = utils.load_label_file(self.frame_label_list[idx], self.resolution)
+            filename = self.video_list[idx].split('/')[-1]
+            buffer = utils.load_video(self.folder_path, filename, self.resolution)
+            buffer = utils.crop_video_from_label(buffer, person_label_box, self.crop_size)
             buffer = self.normalize(buffer)
-
-            # print("label_list = ", label_list)
-            # print(label_list.count('1'))
-            # if label_list.count('1') >= int(self.clip_len / 2):
-            #     label = np.array(1)
-            #     # print(label)
-            # else:
-            #     label = np.array(0)
+            if label_list.count('1') >= int(len(label_list) / 2):
+                label = np.array(1)
                 # print(label)
-            label = np.array(int(label_list[-1]))
+            else:
+                label = np.array(0)
             return torch.from_numpy(buffer), torch.from_numpy(label)
         if (self.is_train == False):
             return self.video_list[idx], (self.framefile_path + "/" +self.frame_label_list[idx])
@@ -219,22 +216,6 @@ class Le2i_VideoDataset:
 
         buffer = buffer[:, time_index:time_index + clip_len]
 
-        # print("time_index = ", time_index)
-
-        ##
-        # x = label_person_box[200][0]
-        # y = label_person_box[200][1]
-        # w = label_person_box[200][2]
-        # h = label_person_box[200][3]
-        # print(x, y, w, h)
-        #
-        # print(frame_width)
-        # ax = float(x) / float(frame_width)
-        # ay = float(y) / float(frame_height)
-        # print(ax, ay)
-        #
-        # print(round(ax * 400), round(ay * 400))
-        ##
         for i in range(clip_len):
             # print("label_person_box[time_index + i] = ", label_person_box[time_index + i])
             # center_x = int(int(label_person_box[time_index + i][0])) + int(

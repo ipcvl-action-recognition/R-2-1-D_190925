@@ -59,7 +59,6 @@ def model_test(resolution, img_show=False):
         cv2.imshow("frame", buffer)
         cv2.waitKey(1)
 
-
 #####  Label Function  #####
 def load_label_file(label_file, resolution):
     label_list = []
@@ -75,7 +74,7 @@ def load_label_file(label_file, resolution):
                                 float(line[5] / resolution.height))
         # person_label_box.append((line[2], line[3], line[4], line[5]))
     
-    return readlabel, person_label_box
+    return label_list, person_label_box
 
 def falldown_counting(label_list):
     fall_down = 0
@@ -87,11 +86,12 @@ def falldown_counting(label_list):
             none += 1
     return fall_down, none
 
-def person_video_from_label(video, person_label_box, crop_size):
+def crop_video_from_label(video, person_label_box, crop_size):
     video = video.transpose((1, 2, 3, 0))  # 3, l, h, w --> l ,h, w, 3
     l, h, w, c = video.shape
     output = np.empty((l, crop_size, crop_size, 3), np.dtype('float32'))
     for idx, img in enumerate(video):
+
         person_x = round((float(person_label_box[idx][0]) * w))
         person_y = round((float(person_label_box[idx][1]) / h))
         person_w = round((float(person_label_box[idx][2]) / w))
@@ -121,7 +121,7 @@ def person_video_from_label(video, person_label_box, crop_size):
             LeftTopy = (h - 1) - (crop_size * 2)
         cropped_img = img[LeftTopy:RightBottomy, LeftTopx:RightBottomx, :]
         output[idx] = cropped_img
-    output = output.transpose((3, 0, 1, 2))
+    output = output.transpose((3, 0, 1, 2)) #l, h, w, 3 --> 3, l, h, w
     return output
 
 def visualization(video_clip, epoch, loss, accuracy):
