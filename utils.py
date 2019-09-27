@@ -28,7 +28,7 @@ def load_video(path, video_name, resolution):
             count += 1
         else:
             break
-    
+
     buffer = buffer.transpose((3, 0, 1, 2))
     return buffer
 
@@ -68,10 +68,10 @@ def load_label_file(label_file, resolution):
         line = line.strip()
         line = line.split()
         label_list.append(line[1])
-        person_label_box.append(float(line[2] / resolution.width),
-                                float(line[3] / resolution.height),
-                                float(line[4] / resolution.width),
-                                float(line[5] / resolution.height))
+        person_label_box.append((float(line[2]) / resolution.width,
+                                float(line[3]) / resolution.height,
+                                float(line[4]) / resolution.width,
+                                float(line[5]) / resolution.height))
         # person_label_box.append((line[2], line[3], line[4], line[5]))
     
     return label_list, person_label_box

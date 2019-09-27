@@ -25,19 +25,19 @@ if __name__ == "__main__":
     # framefile = './single_data/label_Result'
     clip_len = 16
     save_name = ""
-
-    Train_Le2i_Setting = TrainSetting(folder_path='asdf',
-                 readfile='asdfasdf',
-                 framefile='asdf',
+    folder_path = 'D:/Action_Recognition_v2_C3D_ROI_backup/single_data/'
+    Train_Le2i_Setting = TrainSetting(folder_path=folder_path+'Video_all/',
+                 readfile=folder_path+'list/'+'trainlist.txt',
+                 framefile=folder_path+'label_all/',
                  clip_len=16,
                  crop_size=112)
-    Val_Le2i_Setting = TrainSetting(folder_path='1234',
-                                    readfile='zxcv',
-                                    framefile='zxcv',
-                                    clip_len=16,
-                                    crop_size=112)
+    # Val_Le2i_Setting = TrainSetting(folder_path='1234',
+    #                                 readfile='zxcv',
+    #                                 framefile='zxcv',
+    #                                 clip_len=16,
+    #                                 crop_size=112)
 
-    resize_resolution = utils.resolution(l=16, h=360, w=640)
+    resize_resolution = utils.resolution(l=16, h=180, w=320)
 
     folder_path = './Test_data/Video'
     readfile = './Test_data/list'
@@ -48,9 +48,9 @@ if __name__ == "__main__":
     train_dataset = Le2i_VideoDataset(TrainSetting=Train_Le2i_Setting,
                                       resolution=resize_resolution,
                                       is_train=True)
-    val_dataset = Le2i_VideoDataset(TrainSetting=Val_Le2i_Setting,
-                                    resolution=resize_resolution,
-                                    is_train=False)
+    # val_dataset = Le2i_VideoDataset(TrainSetting=Val_Le2i_Setting,
+    #                                 resolution=resize_resolution,
+    #                                 is_train=False)
 
     batch_size = 16
     lr = 1e-5
@@ -152,9 +152,9 @@ if __name__ == "__main__":
         correct_none, correct_falldown = 0, 0
         Val_randIdx = 0
 
-        val_path = './single_data/'
+        val_path = folder_path
         video_name = 'C026100_0021.mp4'
-        readlabel = open('./single_data/C026100_0021.txt', 'r')
+        readlabel = open(folder_path+'/C026100_0021.txt', 'r')
         label_list, person_label_box = utils.load_label_file(readlabel, resize_resolution)
 
         correct_fall_down, correct_none = utils.falldown_counting(label_list)

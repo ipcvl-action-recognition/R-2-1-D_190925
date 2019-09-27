@@ -136,8 +136,8 @@ class Le2i_VideoDataset:
         self.crop_size = TrainSetting.crop_size
         self.crop_size_width = TrainSetting.crop_size
         self.crop_size_height = TrainSetting.crop_size
-        self.resize_width = 640
-        self.resize_height = 360
+        self.resize_width = resolution.width
+        self.resize_height = resolution.height
         self.data_length = len(self.video_list)
         self.imgArg = ImageArg()
         self.allImage_buffer_list = []
@@ -148,7 +148,8 @@ class Le2i_VideoDataset:
 
     def __getitem__(self, idx):
         if (self.is_train==True):
-            label_list, person_label_box = utils.load_label_file(self.frame_label_list[idx], self.resolution)
+            print(self.folder_path+self.frame_label_list[idx])
+            label_list, person_label_box = utils.load_label_file(self.framefile_path+self.frame_label_list[idx], self.resolution)
             filename = self.video_list[idx].split('/')[-1]
             buffer = utils.load_video(self.folder_path, filename, self.resolution)
             buffer = utils.crop_video_from_label(buffer, person_label_box, self.crop_size)
