@@ -50,14 +50,21 @@ def crop(buffer, clip_len, crop_size):
              width_index:width_index + crop_size]
     return buffer
 
-def model_test(resolution, img_show=False):
-    path = ""
-    video_name = ""
-    buffer = load_video(path, video_name, resolution)
-    
-    if img_show:
-        cv2.imshow("frame", buffer)
-        cv2.waitKey(1)
+def model_test(clip, model):
+    input = np.transpose(clip, (3, 0, 1, 2))
+    input = torch.from_numpy(input).cuda()
+    with torch.no_grad():
+        output = model(input)
+    output = torch.sigmoid(output).cpu().squeeze()
+    y_pred_index = torch.round(output).int()
+    return y_pred_index
+
+def count_y_pred(y_pred_index, fall_down, none):
+    if y_pred_index == 0:
+        none += 1
+    else:
+        fall_down += 1
+    return fall_down, none
 
 #####  Label Function  #####
 def load_label_file(label_file, resolution):
@@ -76,7 +83,7 @@ def load_label_file(label_file, resolution):
     
     return label_list, person_label_box
 
-def falldown_counting(label_list):
+def correct_falldown_count(label_list):
     fall_down = 0
     none = 0
     for one in label_list:

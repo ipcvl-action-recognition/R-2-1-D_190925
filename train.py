@@ -157,7 +157,7 @@ if __name__ == "__main__":
         readlabel = open(folder_path+'/C026100_0021.txt', 'r')
         label_list, person_label_box = utils.load_label_file(readlabel, resize_resolution)
 
-        correct_fall_down, correct_none = utils.falldown_counting(label_list)
+        correct_fall_down, correct_none = utils.correct_falldown_count(label_list)
 
         clip = []
         count = 0
@@ -170,17 +170,8 @@ if __name__ == "__main__":
         for idx, frame in enumerate(buffer):
             clip.append(frame)
             if len(clip) == clip_len: # l, h, w, 3
-                input = np.transpose(clip, (3, 0, 1, 2))
-                input = torch.from_numpy(input).cuda()
-
-                with torch.no_grad():
-                    output = my_model(input)
-                output = torch.sigmoid(output).cpu().squeeze()
-                y_pred_index = torch.round(output).int()
-                if y_pred_index == 0:
-                    none += 1
-                else:
-                    fall_down += 1
+                y_pred_index = utils.model_test(clip, model=my_model)
+                fall_down, none = utils.count_y_pred(y_pred_index, fall_down, none)
                 lable_temp = label_list[idx - clip_len + 1: idx+clip_len]
                 if lable_temp.count('1') >= int(len(lable_temp) / 2):
                     label = np.array(1)
