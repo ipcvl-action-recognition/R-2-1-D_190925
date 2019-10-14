@@ -11,7 +11,17 @@ class resolution:
         self.length = l
         self.height = h
         self.width = w
-        
+
+def transformation_3D_to_2D(buffer):
+    first = True
+    for img in buffer:
+        if first:
+            new_buffer = img
+            first = False
+        else:
+            new_buffer = np.concatenate((new_buffer, img), axis=2)
+    new_buffer = new_buffer.transpose((2, 0, 1))  # (C*L, H, W)
+    return new_buffer
 def load_video(path, video_name, resolution):
     cap = cv2.VideoCapture(path+video_name)
     frame_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -28,7 +38,7 @@ def load_video(path, video_name, resolution):
             count += 1
         else:
             break
-
+    cap.release()
     buffer = buffer.transpose((3, 0, 1, 2))
     return buffer
 
@@ -38,20 +48,20 @@ def pre_processing(buffer, resolution, crop_size):
     return buffer
 
 def crop(buffer, clip_len, crop_size):
-    time_index = np.random.randint(buffer.shape[1] - clip_len) # 196-8
+    time_index = np.random.randint(buffer.shape[0] - clip_len*3) # 196-8
     # print("time_index = ", time_index ) # 186
-    height_index = np.random.randint(buffer.shape[2] - crop_size)
+    height_index = np.random.randint(buffer.shape[1] - crop_size)
     # print("height_index = ", height_index) # 3
-    width_index = np.random.randint(buffer.shape[3] - crop_size)
+    width_index = np.random.randint(buffer.shape[2] - crop_size)
     # print("width_index = ", width_index) # 5
 
-    buffer = buffer[:, time_index:time_index + clip_len,
+    buffer = buffer[:, time_index:time_index + clip_len*3,
              height_index:height_index + crop_size,
              width_index:width_index + crop_size]
     return buffer
 
 def model_test(clip, model):
-    input = np.transpose(clip, (3, 0, 1, 2))
+    # input = np.transpose(clip, (3, 0, 1, 2))
     input = torch.from_numpy(input).cuda()
     with torch.no_grad():
         output = model(input)

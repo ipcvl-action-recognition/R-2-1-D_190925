@@ -164,9 +164,10 @@ if __name__ == "__main__":
 
         buffer = utils.load_video(val_path, video_name, resize_resolution)
         buffer = utils.crop_video_from_label(buffer, person_label_box, crop_size=112)
-        buffer = buffer.transpose((1,2,3,0)) # 3, l, h, w --> l, h, w, 3
+        buffer = buffer.transpose((1, 2, 3, 0))  # 3, l, h, w --> l, h, w, 3
+        buffer = utils.transformation_3D_to_2D(buffer) # l, h, w, 3 --> l*3, h, w
         buffer = buffer.astype(np.float32)/255.0
-        frame_length = buffer.shape[0]
+        frame_length = buffer.shape[0]//3
         for idx, frame in enumerate(buffer):
             clip.append(frame)
             if len(clip) == clip_len: # l, h, w, 3

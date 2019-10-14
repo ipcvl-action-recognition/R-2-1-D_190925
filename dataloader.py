@@ -71,6 +71,7 @@ class UCF101_Dataset:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 if first:
                     buffer = frame
+                    first = False
                 else:
                     buffer = np.concatenate((buffer, frame), axis=2)
                 # buffer[count] = frame

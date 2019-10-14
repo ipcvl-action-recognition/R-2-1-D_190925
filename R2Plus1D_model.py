@@ -11,14 +11,14 @@ class SpatioTemporalConv2D(nn.Module):
         padding = _triple(padding)
         frame_length = 16
         if first_conv:
-            spatial_kernel_size = kernel_size
-            spatial_stride = (1, stride[1], stride[2])
+            spatial_kernel_size = (7, 7)
+            spatial_stride = (stride[1], stride[2])
             spatial_padding = padding
 
             
             intermed_channels = 45
 
-            self.spatial_conv = nn.Conv2d(in_channels, intermed_channels, spatial_kernel_size,
+            self.spatial_conv = nn.Conv2d(48, intermed_channels, spatial_kernel_size,
                                           stride=spatial_stride, padding=spatial_padding, bias=bias,
                                           groups=frame_length)
             self.bn1 = nn.BatchNorm2d(intermed_channels)
