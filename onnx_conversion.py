@@ -45,11 +45,11 @@ while retaining:
             break
 '''
 model = R2Plus1D_model.R2Plus1DClassifier(num_classes=1, layer_sizes=(2, 2, 2, 2)).cuda()
-checkpoint = torch.load('Falldown_0817_C3D_224x224x16_best_acc_17_0.13_99.30.pt', map_location=lambda storage, loc: storage)
+checkpoint = torch.load('avgpool177.pt', map_location=lambda storage, loc: storage)
 # model.load_state_dict(checkpoint)
 model.eval()
 dummy_input = torch.randn(1, 3, 16, 224, 224).cuda()
 # input_names = [ "actual_input_1" ] + [ "learned_%d" % i for i in range(16) ]
 output_names = [ "output1" ]
-torch.onnx.export(model, dummy_input, "R2plus1D_model.onnx", verbose=True, output_names=output_names)
+torch.onnx.export(model, dummy_input, "adaptive1.onnx", verbose=True, output_names=output_names)
 # torch.onnx.export(model, dummy_input, "R2plus1D_model.onnx", verbose=False)

@@ -22,8 +22,8 @@ def load_video(path, video_name, resolution):
     while count < frame_length and cap.isOpened():
         ret, frame = cap.read()  # frame 읽어오면 ret = true 실패하면 ret = false
         if ret:
-            if (frame_height != resolution.h) or (frame_width != resolution.w):
-                frame = cv2.resize(frame, (resolution.w, resolution.h))  # frame_resize w, h
+            if (frame_height != resolution.height) or (frame_width != resolution.width):
+                frame = cv2.resize(frame, (resolution.width, resolution.height))  # frame_resize w, h
             buffer[count] = frame
             count += 1
         else:

@@ -58,8 +58,9 @@ class UCF101_Dataset:
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # buffer = np.empty((frame_length, self.resize_height, self.resize_width, 3), np.dtype('float32'))
-        buffer = np.array((frame_length, self.resize_height, self.resize_width, 3), np.dtype('int8'))
-
+        # buffer = np.array((frame_length, self.resize_height, self.resize_width, 3), np.dtype('int8'))
+        first = True
+        # buffer = np.array((frame_length*3, self.resize_height, self.resize_width), np.dtype('int8'))
         count = 0
         # print(frame_length)
         while count < frame_length and cap.isOpened():
@@ -68,22 +69,27 @@ class UCF101_Dataset:
                 if (frame_height != self.resize_height) or (frame_width != self.resize_width):
                     frame = cv2.resize(frame, (self.resize_width, self.resize_height))
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                buffer[count] = frame
+                if first:
+                    buffer = frame
+                else:
+                    buffer = np.concatenate((buffer, frame), axis=2)
+                # buffer[count] = frame
                 count += 1
 
             else:
                 break
 
         cap.release()
-        buffer = buffer.transpose((3, 0, 1, 2))  # c, l, h, w
+        buffer = buffer.transpose((2, 0, 1))
+        # buffer = buffer.transpose((3, 0, 1, 2))  # c, l, h, w
         return buffer
 
     def crop(self, buffer, clip_len, crop_size):
-        time_index = np.random.randint(buffer.shape[1] - clip_len)
-        height_index = np.random.randint(buffer.shape[2] - crop_size)
-        width_index = np.random.randint(buffer.shape[3] - crop_size)
+        time_index = np.random.randint(buffer.shape[0] - clip_len*3)
+        height_index = np.random.randint(buffer.shape[1] - crop_size)
+        width_index = np.random.randint(buffer.shape[2] - crop_size)
         # print(width_index, height_index)
-        buffer = buffer[:, time_index:time_index + clip_len,
+        buffer = buffer[:, time_index:time_index + clip_len*3,
                  height_index:height_index + crop_size,
                  width_index:width_index + crop_size]
 
