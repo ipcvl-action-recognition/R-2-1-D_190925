@@ -24,6 +24,7 @@ if __name__ == "__main__":
     # readfile = './single_data/list'
     # framefile = './single_data/label_Result'
     clip_len = 16
+    crop_size = 112
     save_name = ""
     folder_path = 'D:/Action_Recognition_v2_C3D_ROI_backup/single_data/'
     Train_Le2i_Setting = TrainSetting(folder_path=folder_path+'Video_all/',
@@ -37,19 +38,19 @@ if __name__ == "__main__":
     #                                 clip_len=16,
     #                                 crop_size=112)
 
-    resize_resolution = utils.resolution(l=16, h=180, w=320)
+    resize_resolution = utils.resolution(l=16, h=180*2, w=320*2)
 
-    folder_path = './Test_data/Video'
+    # folder_path = './Test_data/Video'
     readfile = './Test_data/list'
-    framefile = './Test_data/label_Result'
+
 
     ############ Train ###############
 
     train_dataset = Le2i_VideoDataset(TrainSetting=Train_Le2i_Setting,
-                                      resolution=resize_resolution,
+                                      resize_resolution=resize_resolution,
                                       is_train=True)
     # val_dataset = Le2i_VideoDataset(TrainSetting=Val_Le2i_Setting,
-    #                                 resolution=resize_resolution,
+    #                                 resize_resolution=resize_resolution,
     #                                 is_train=False)
 
     batch_size = 16
@@ -110,7 +111,8 @@ if __name__ == "__main__":
         print('Epoch:', epoch, 'LR:', scheduler.get_lr())
         isPut = True
         for it, data in enumerate(train_dataLoader):
-            x = data[0].cuda()  # buffer #(batch, frame channel h, w)
+            x = utils.transformation_3D_to_2D(data[0]).cuda()
+            # x = data[0].cuda()  # buffer #(batch, frame channel h, w)
             y = data[1].cuda()  # label - one_hot
             # print(x.shape)
             optimizer.zero_grad()
@@ -133,8 +135,11 @@ if __name__ == "__main__":
                 print()
             train_epoch_losses.append(loss.item())
             if isPut:
-                _x = x[0, :]
-                _x = _x.permute(1, 0, 2, 3)
+                print(x.shape)
+                b, tc, h, w = x.shape
+                _x = x.reshape(b, clip_len, 3, h, w)
+                _x = _x[0, :]  # 16 3 224 224
+                # _x = _x.permute(1, 0, 2, 3)  # 16 3 224 224
                 vis.images(_x, win="Img")
                 sleep(1)
                 # isPut = False
@@ -151,26 +156,53 @@ if __name__ == "__main__":
         none, fall_down = 0, 0
         correct_none, correct_falldown = 0, 0
         Val_randIdx = 0
-
-        val_path = folder_path
-        video_name = 'C026100_0021.mp4'
-        readlabel = open(folder_path+'/C026100_0021.txt', 'r')
-        label_list, person_label_box = utils.load_label_file(readlabel, resize_resolution)
-
-        correct_fall_down, correct_none = utils.correct_falldown_count(label_list)
+        framefile_path = val_path = 'D:/Action_Recognition_v2_C3D_ROI_backup/single_data/'
+        filename = 'C026100_0021'
+        video_name = filename+'.mp4'
+        readlabel = open(folder_path+filename+'.txt', 'r')
 
         clip = []
         count = 0
+        buffer, origin_resolution = utils.load_video(val_path, video_name, resize_resolution)
+        video = buffer.clone().detach()
+        label_list, person_label_box = utils.load_label_file(folder_path + filename + '.txt', origin_resolution,
+                                                             resize_resolution)
+        correct_fall_down, correct_none = utils.correct_falldown_count(label_list)
+        buffer = utils.crop_video_from_label(buffer, resize_resolution, person_label_box, crop_size)
+        # buffer, label_list = utils.crop(buffer, label_list, clip_len)
+        buffer = buffer.float() / 255.0
+        # buffer = buffer.astype(torch.float32) / 255.0
+          # 3, l, h, w --> l, h, w, 3
 
-        buffer = utils.load_video(val_path, video_name, resize_resolution)
-        buffer = utils.crop_video_from_label(buffer, person_label_box, crop_size=112)
-        buffer = buffer.transpose((1, 2, 3, 0))  # 3, l, h, w --> l, h, w, 3
         buffer = utils.transformation_3D_to_2D(buffer) # l, h, w, 3 --> l*3, h, w
-        buffer = buffer.astype(np.float32)/255.0
         frame_length = buffer.shape[0]//3
+        for idx, frame in enumerate(video):
+            frame = frame.data.cpu().numpy()
+            clip.append(frame)
+            if len(clip) == clip_len:  # l, h, w, 3
+                np_clip = np.array(clip, dtype=np.float32) / 255.0
+                np_clip = torch.from_numpy(np_clip)
+                l, h, w, c = np_clip.shape
+                np_clip = np_clip.permute((3, 0, 1, 2))
+                np_clip = np_clip.reshape((-1, h, w))
+                np_clip = torch.unsqueeze(np_clip, 0)
+                # np_clip = np.expand_dims(np_clip, axis=0)
+                y_pred_index = utils.model_test(np_clip, model=my_model)
+                fall_down, none = utils.count_y_pred(y_pred_index, fall_down, none)
+                lable_temp = label_list[idx - clip_len + 1: idx + clip_len]
+                if lable_temp.count('1') >= int(len(lable_temp) / 2):
+                    label = np.array(1)
+                else:
+                    label = np.array(0)
+                y = torch.from_numpy(label).int()
+                correct += (y_pred_index == y).sum().item()
+
+                clip.pop(0)
+
+        '''
         for idx, frame in enumerate(buffer):
             clip.append(frame)
-            if len(clip) == clip_len: # l, h, w, 3
+            if len(clip) == clip_len:  # l, h, w, 3
                 y_pred_index = utils.model_test(clip, model=my_model)
                 fall_down, none = utils.count_y_pred(y_pred_index, fall_down, none)
                 lable_temp = label_list[idx - clip_len + 1: idx+clip_len]
@@ -181,8 +213,8 @@ if __name__ == "__main__":
                 y = torch.from_numpy(label).int()
                 correct += (y_pred_index == y).sum().item()
                 clip.pop(0)
-
-        accuracy = 100 * (correct / frame_length - clip_len + 1)
+        '''
+        accuracy = 100 * (correct / (frame_length - clip_len + 1))
 
         print("[None/C_None] : [{0}/{1}], [Fall_Down/C_Falldown] : [{2}/{3}], "
               "[Correct/Total] : [{4}/{5}], [Accuracy] : {6:2.2f}".

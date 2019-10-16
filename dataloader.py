@@ -123,8 +123,8 @@ class UCF101_Dataset:
             return [''.join(label_list)]
 
 class Le2i_VideoDataset:
-    def __init__(self, TrainSetting, resolution, is_train):
-        self.resolution = resolution
+    def __init__(self, TrainSetting, resize_resolution, is_train):
+        self.resize_resolution = resize_resolution
         self.folder_path = TrainSetting.folder_path
         folder_list = os.listdir(TrainSetting.folder_path)
         self.folder_list = folder_list
@@ -143,8 +143,8 @@ class Le2i_VideoDataset:
         self.crop_size = TrainSetting.crop_size
         self.crop_size_width = TrainSetting.crop_size
         self.crop_size_height = TrainSetting.crop_size
-        self.resize_width = resolution.width
-        self.resize_height = resolution.height
+        self.resize_width = resize_resolution.width
+        self.resize_height = resize_resolution.height
         self.data_length = len(self.video_list)
         self.imgArg = ImageArg()
         self.allImage_buffer_list = []
@@ -155,18 +155,22 @@ class Le2i_VideoDataset:
 
     def __getitem__(self, idx):
         if (self.is_train==True):
-            print(self.folder_path+self.frame_label_list[idx])
-            label_list, person_label_box = utils.load_label_file(self.framefile_path+self.frame_label_list[idx], self.resolution)
-            filename = self.video_list[idx].split('/')[-1]
-            buffer = utils.load_video(self.folder_path, filename, self.resolution)
-            buffer = utils.crop_video_from_label(buffer, person_label_box, self.crop_size)
+            video_name = self.video_list[idx].split('/')[-1]
+            filename = video_name.split('.')[0]
+            buffer, origin_resolution = utils.load_video(self.folder_path, video_name, self.resize_resolution)
+            # buffer = utils.video_resize(buffer, resolution=self.resolution)
+            # print(filename)
+            label_list, person_label_box = utils.load_label_file(self.framefile_path + filename+'.txt', origin_resolution, self.resize_resolution)
+            # print(person_label_box[0])
+            buffer = utils.crop_video_from_label(buffer, origin_resolution, person_label_box, self.crop_size)
+            buffer, label_list = utils.crop(buffer, label_list, clip_len=self.clip_len)
             buffer = self.normalize(buffer)
             if label_list.count('1') >= int(len(label_list) / 2):
                 label = np.array(1)
                 # print(label)
             else:
                 label = np.array(0)
-            return torch.from_numpy(buffer), torch.from_numpy(label)
+            return buffer, torch.from_numpy(label)
         if (self.is_train == False):
             return self.video_list[idx], (self.framefile_path + "/" +self.frame_label_list[idx])
 
@@ -293,13 +297,9 @@ class Le2i_VideoDataset:
 
 
     def normalize(self, buffer):
-        buffer = buffer.astype(np.float32)
-        buffer = buffer / 255.0  # (buffer-128)/128
-        # buffer = buffer.transpose((1, 2, 3, 0))  # f, h, w, c
-        # for i, frame in enumerate(buffer):
-        #     frame -= np.array([[[90, 98, 102]]]).astype('float32')
-        #     buffer[i] = frame
-        # buffer = buffer.transpose((3, 0, 1, 2))
+        # buffer = buffer.astype(torch.float32)
+        buffer = buffer / 255.0
+
         return buffer
 
     def label_extraction(self, fname):
