@@ -159,7 +159,7 @@ class Le2i_VideoDataset:
             filename = video_name.split('.')[0]
             buffer, origin_resolution = utils.load_video(self.folder_path, video_name, self.resize_resolution)
             # buffer = utils.video_resize(buffer, resolution=self.resolution)
-            # print(filename)
+
             label_list, person_label_box = utils.load_label_file(self.framefile_path + filename+'.txt', origin_resolution, self.resize_resolution)
             # print(person_label_box[0])
             buffer = utils.crop_video_from_label(buffer, origin_resolution, person_label_box, self.crop_size)

@@ -324,17 +324,17 @@ class R2Plus1DNet(nn.Module):
         self.conv5 = SpatioTemporalResLayer(128, 128, 3, layer_sizes[3], block_type=block_type, downsample=True)      
         '''
 
-        self.conv1 = SpatioTemporalConv2D(3, 32, (1, 7, 7), stride=(2, 2), padding=(3, 3), first_conv=True)
+        self.conv1 = SpatioTemporalConv2D(3, 32, (1, 7, 7), stride=(2, 2), padding=(3, 3), first_conv=True).cuda()
         # output of conv2 is same size as of conv1, no downsampling needed. kernel_size 3x3x3
-        self.conv2 = SpatioTemporalResLayer(32, 64, 3, layer_sizes[0], block_type=block_type, downsample=True)
+        self.conv2 = SpatioTemporalResLayer(32, 64, 3, layer_sizes[0], block_type=block_type, downsample=True).cuda()
         # each of the final three layers doubles num_channels, while performing downsampling
         # inside the first block
-        self.conv3_a = SpatioTemporalResLayer(64, 128, 3, layer_sizes[1], block_type=block_type, downsample=True)
-        self.conv3_b = SpatioTemporalResLayer(128, 128, 3, layer_sizes[1], block_type=block_type, downsample=False)
-        self.conv4_a = SpatioTemporalResLayer(128, 256, 3, layer_sizes[2], block_type=block_type, downsample=True)
-        self.conv4_b = SpatioTemporalResLayer(256, 256, 3, layer_sizes[2], block_type=block_type, downsample=False)
-        self.conv5_a = SpatioTemporalResLayer(256, 256, 3, layer_sizes[2], block_type=block_type, downsample=True)
-        self.conv5_b = SpatioTemporalResLayer(256, 256, 3, layer_sizes[2], block_type=block_type, downsample=False)
+        self.conv3_a = SpatioTemporalResLayer(64, 128, 3, layer_sizes[1], block_type=block_type, downsample=True).cuda()
+        self.conv3_b = SpatioTemporalResLayer(128, 128, 3, layer_sizes[1], block_type=block_type, downsample=False).cuda()
+        self.conv4_a = SpatioTemporalResLayer(128, 256, 3, layer_sizes[2], block_type=block_type, downsample=True).cuda()
+        self.conv4_b = SpatioTemporalResLayer(256, 256, 3, layer_sizes[2], block_type=block_type, downsample=False).cuda()
+        self.conv5_a = SpatioTemporalResLayer(256, 256, 3, layer_sizes[2], block_type=block_type, downsample=True).cuda()
+        self.conv5_b = SpatioTemporalResLayer(256, 256, 3, layer_sizes[2], block_type=block_type, downsample=False).cuda()
 
         # global average pooling of the output
         self.pool = nn.AdaptiveAvgPool2d(1)
@@ -381,7 +381,7 @@ class R2Plus1DClassifier(nn.Module):
     def __init__(self, num_classes, layer_sizes, block_type=SpatioTemporalResBlock2D, pretrained=False):
         super(R2Plus1DClassifier, self).__init__()
 
-        self.res2plus1d = R2Plus1DNet(layer_sizes, block_type)
+        self.res2plus1d = R2Plus1DNet(layer_sizes, block_type).cuda()
         self.linear = nn.Linear(256, num_classes).cuda()
 
 
@@ -389,7 +389,7 @@ class R2Plus1DClassifier(nn.Module):
             self.__load_pretrained_weights()
 
     def forward(self, x):
-        x = self.res2plus1d(x).cuda()
+        x = self.res2plus1d(x)
         logits = self.linear(x)
         return logits
 

@@ -77,8 +77,10 @@ def crop(buffer, label, clip_len):
 def model_test(clip, model):
     # input = np.transpose(clip, (3, 0, 1, 2))
     # input = torch.from_numpy(clip).cuda()
+    model = model.cuda()
+    clip = clip.cuda()
     with torch.no_grad():
-        output = model(clip).cuda()
+        output = model(clip)
     output = torch.sigmoid(output).cpu().squeeze()
     y_pred_index = torch.round(output).int()
     return y_pred_index

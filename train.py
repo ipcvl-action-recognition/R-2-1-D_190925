@@ -27,9 +27,10 @@ if __name__ == "__main__":
     crop_size = 112
     save_name = ""
     folder_path = 'D:/Action_Recognition_v2_C3D_ROI_backup/single_data/'
-    Train_Le2i_Setting = TrainSetting(folder_path=folder_path+'Video_all/',
-                 readfile=folder_path+'list/'+'trainlist.txt',
-                 framefile=folder_path+'label_all/',
+    framefile_path = val_path = 'D:/Action_Recognition_v2_C3D_ROI_backup/single_data/'
+    Train_Le2i_Setting = TrainSetting(folder_path=folder_path+'Video_kisa/',
+                 readfile=folder_path+'kisa_train.txt',
+                 framefile=folder_path+'label_Kisa/',
                  clip_len=16,
                  crop_size=112)
     # Val_Le2i_Setting = TrainSetting(folder_path='1234',
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     #                                 resize_resolution=resize_resolution,
     #                                 is_train=False)
 
-    batch_size = 16
+    batch_size = 32
     lr = 1e-5
 
     train_dataLoader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=0,
@@ -138,6 +139,7 @@ if __name__ == "__main__":
                 print(x.shape)
                 b, tc, h, w = x.shape
                 _x = x.reshape(b, clip_len, 3, h, w)
+
                 _x = _x[0, :]  # 16 3 224 224
                 # _x = _x.permute(1, 0, 2, 3)  # 16 3 224 224
                 vis.images(_x, win="Img")
@@ -156,7 +158,7 @@ if __name__ == "__main__":
         none, fall_down = 0, 0
         correct_none, correct_falldown = 0, 0
         Val_randIdx = 0
-        framefile_path = val_path = 'D:/Action_Recognition_v2_C3D_ROI_backup/single_data/'
+
         filename = 'C026100_0021'
         video_name = filename+'.mp4'
         readlabel = open(folder_path+filename+'.txt', 'r')
@@ -185,9 +187,9 @@ if __name__ == "__main__":
                 l, h, w, c = np_clip.shape
                 np_clip = np_clip.permute((3, 0, 1, 2))
                 np_clip = np_clip.reshape((-1, h, w))
-                np_clip = torch.unsqueeze(np_clip, 0)
+                np_clip = torch.unsqueeze(np_clip, 0).cuda()
                 # np_clip = np.expand_dims(np_clip, axis=0)
-                y_pred_index = utils.model_test(np_clip, model=my_model)
+                y_pred_index = utils.model_test(np_clip, model=my_model.cuda())
                 fall_down, none = utils.count_y_pred(y_pred_index, fall_down, none)
                 lable_temp = label_list[idx - clip_len + 1: idx + clip_len]
                 if lable_temp.count('1') >= int(len(lable_temp) / 2):
